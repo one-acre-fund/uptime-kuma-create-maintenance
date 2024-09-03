@@ -55,7 +55,7 @@ jobs:
                 uses: actions/checkout@v2
 
             - name: Create Uptime Kuma Maintenance
-                uses: /Users/bisonlou/projects/uptime-kuma-create-maintenance
+                uses: action/uptime-kuma-create-maintenance
                 with:
                     api-key: ${{ secrets.UPTIME_KUMA_API_KEY }}
                     monitor-id: ${{ vars.UPTIME_KUMA_MONITOR_ID }}
