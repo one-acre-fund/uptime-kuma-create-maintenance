@@ -10,13 +10,11 @@ To use this action, include the following step in your workflow:
 
 ```yaml
 - name: Create Uptime Kuma Maintenance
-    uses: /Users/bisonlou/projects/uptime-kuma-create-maintenance
+    uses: actions/uptime-kuma-create-maintenance@v1
     with:
         api-key: ${{ secrets.UPTIME_KUMA_API_KEY }}
         monitor-id: ${{ secrets.UPTIME_KUMA_MONITOR_ID }}
         maintenance-name: 'Scheduled Maintenance'
-        start-time: '2022-01-01T00:00:00Z'
-        end-time: '2022-01-02T00:00:00Z'
 ```
 
 Make sure to replace the placeholders with the appropriate values. The `api-key` and `monitor-id` should be stored as secrets in your repository.
@@ -26,8 +24,6 @@ Make sure to replace the placeholders with the appropriate values. The `api-key`
 - `api-key` (required): The API key for accessing the uptime kuma API.
 - `monitor-id` (required): The ID of the monitor to add to the maintenance.
 - `maintenance-name` (required): The name of the maintenance.
-- `start-time` (required): The start time of the maintenance in ISO 8601 format.
-- `end-time` (required): The end time of the maintenance in ISO 8601 format.
 
 ### Outputs
 
