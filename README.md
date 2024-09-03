@@ -12,18 +12,24 @@ To use this action, include the following step in your workflow:
 - name: Create Uptime Kuma Maintenance
     uses: actions/uptime-kuma-create-maintenance@v1
     with:
-        api-key: ${{ secrets.UPTIME_KUMA_API_KEY }}
-        monitor-id: ${{ secrets.UPTIME_KUMA_MONITOR_ID }}
-        maintenance-name: 'Scheduled Maintenance'
+        UPTIME_USERNAME: "${{ vars.UPTIME_USERNAME }}"
+        UPTIME_PASSWORD: "${{ secrets.UPTIME_PASSWORD }}"
+        UPTIME_API_URL: "${{ vars.UPTIME_API_URL }}"
+        MAINTENANCE_TITLE: "Service Deployment"
+        MONITOR_ID: "${{ vars.UPTIME_MONITOR_ID }}"
+        MONITOR_NAME: "Service Maintenance"
 ```
 
 Make sure to replace the placeholders with the appropriate values. The `api-key` and `monitor-id` should be stored as secrets in your repository.
 
 ### Inputs
 
-- `api-key` (required): The API key for accessing the uptime kuma API.
-- `monitor-id` (required): The ID of the monitor to add to the maintenance.
-- `maintenance-name` (required): The name of the maintenance.
+- `UPTIME_USERNAME` (required): The username for accessing the uptime kuma API.
+- `UPTIME_PASSWORD` (required): The password for accessing the uptime kuma API.
+- `UPTIME_API_URL` (required): The URL of the uptime kuma API.
+- `MAINTENANCE_TITLE` (required): The title of the maintenance.
+- `MONITOR_ID` (required): The ID of the monitor to add to the maintenance.
+- `MONITOR_NAME` (required): The name of the monitor.
 
 ### Outputs
 
@@ -55,11 +61,14 @@ jobs:
                 uses: actions/checkout@v2
 
             - name: Create Uptime Kuma Maintenance
-                uses: action/uptime-kuma-create-maintenance
+                uses: actions/uptime-kuma-create-maintenance@v1.0.0
                 with:
-                    api-key: ${{ secrets.UPTIME_KUMA_API_KEY }}
-                    monitor-id: ${{ vars.UPTIME_KUMA_MONITOR_ID }}
-                    maintenance-name: 'Scheduled Maintenance'
+                    UPTIME_USERNAME: "${{ vars.UPTIME_USERNAME }}"
+                    UPTIME_PASSWORD: "${{ secrets.UPTIME_PASSWORD }}"
+                    UPTIME_API_URL: "${{ vars.UPTIME_API_URL }}"
+                    MAINTENANCE_TITLE: "Service Deployment"
+                    MONITOR_ID: "${{ vars.UPTIME_MONITOR_ID }}"
+                    MONITOR_NAME: "Service Maintenance"
 ```
 
 This workflow will create a maintenance in uptime kuma every day at midnight.
