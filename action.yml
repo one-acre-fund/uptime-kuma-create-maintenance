@@ -1,0 +1,110 @@
+name: Helm Create Maintenance Window
+description: GitHub Action for creating a maintenance window and adding a monitor to it on uptime
+inputs:
+  UPTIME_USERNAME:
+    description: 'Uptime username'
+    required: true
+  UPTIME_PASSWORD:
+    description: 'Uptime password'
+    required: true
+  UPTIME_API_URL:
+    description: 'Uptime API URL'
+    required: true
+  MAINTENANCE_TITLE:
+    description: 'Title of the maintenance window'
+    required: true
+  MONITOR_ID:
+    description: 'Monitor ID to add to the maintenance window'
+    required: true
+  MONITOR_NAME:
+    description: 'Monitor name to add to the maintenance window'
+    required: true
+outputs:
+  maintenance_id:
+    description: 'The generated maintenance ID'
+    value: ${{ steps.create-maintenance.outputs.maintenance_id }}
+
+runs:
+  using: composite
+  steps:
+    - name: Run Python script
+      id: create-maintenance
+      shell: bash
+      env:
+        UPTIME_USERNAME: ${{ inputs.UPTIME_USERNAME }}
+        UPTIME_PASSWORD: ${{ inputs.UPTIME_PASSWORD }}
+        UPTIME_API_URL: ${{ inputs.UPTIME_API_URL }}
+        MAINTENANCE_TITLE: ${{ inputs.MAINTENANCE_TITLE }}
+        MONITOR_ID: ${{ inputs.MONITOR_ID }}
+        MONITOR_NAME: ${{ inputs.MONITOR_NAME }}
+      run: |
+        TOKEN=$(curl -X POST -L -H 'Content-Type: application/x-www-form-urlencoded' \
+          --data "username=${UPTIME_USERNAME}&password=${UPTIME_PASSWORD}" \
+          "${UPTIME_API_URL}/login/access-token/" | jq -r ".access_token")
+
+        if [ -z "$TOKEN" ]; then
+          echo "Failed to obtain access token"
+          exit 1
+        fi
+
+        # Get the current date and time
+        CURRENT_DATE=$(date +"%Y-%m-%d %H:%M:%S")
+        echo "Current Date: $CURRENT_DATE"
+
+        # Log the payload being sent
+        echo "Sending the following payload to create maintenance window:"
+        echo '{
+            "title": "'"${MAINTENANCE_TITLE}"'",
+            "strategy": "manual",
+            "active": true,
+            "description": "",
+            "dateRange": [
+              "'"${CURRENT_DATE}"'"
+            ],
+            "intervalDay": 1,
+            "weekdays": [],
+            "daysOfMonth": []
+          }'
+        # Create the maintenance window and capture the maintenance ID
+        RESPONSE=$(curl -vsL -X POST -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${TOKEN}" \
+          -d '{
+            "title": "'"${MAINTENANCE_TITLE}"'",
+            "strategy": "manual",
+            "active": true,
+            "description": "",
+            "dateRange": [
+              "'"${CURRENT_DATE}"'"
+            ],
+            "intervalDay": 1,
+            "weekdays": [],
+            "daysOfMonth": []
+          }' "${UPTIME_API_URL}/maintenance/")
+
+        # Log the response from the API
+        echo "API Response: $RESPONSE"
+
+        MAINTENANCE_ID=$(echo $RESPONSE | jq -r ".maintenanceID")
+        
+        if [ -z "$MAINTENANCE_ID" ] || [ "$MAINTENANCE_ID" == "null" ]; then
+          echo "Failed to create maintenance window. Response was: $RESPONSE"
+          exit 1
+        else
+          echo "Maintenance ID: $MAINTENANCE_ID"
+        fi
+
+        # Add the monitor to the maintenance window
+        ADD_MONITOR_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${TOKEN}" \
+          -d '[
+            {
+              "id": '"${MONITOR_ID}"',
+              "name": "'"${MONITOR_NAME}"'"
+            }
+          ]' "${UPTIME_API_URL}/maintenance/${MAINTENANCE_ID}/monitors")
+
+        echo "Monitor added to maintenance ID: $MAINTENANCE_ID with Monitor ID: $MONITOR_ID"
+
+        # Set the output
+        echo "maintenance_id=$MAINTENANCE_ID" >> "$GITHUB_OUTPUT"
+      working-directory: "${{ github.workspace }}"
