@@ -1,5 +1,5 @@
 name: Create Uptime Kuma Maintenance
-description: GitHub Action for creating a maintenance and adding a monitor to it on uptime
+description: GitHub Action for creating a maintenance and adding monitors to it on uptime
 branding:
   icon: battery-charging
   color: green
@@ -16,11 +16,11 @@ inputs:
   MAINTENANCE_TITLE:
     description: 'Title of the maintenance window'
     required: true
-  MONITOR_ID:
-    description: 'Monitor ID to add to the maintenance window'
+  MONITOR_IDS:
+    description: 'Comma-separated list of Monitor IDs to add to the maintenance window'
     required: true
-  MONITOR_NAME:
-    description: 'Monitor name to add to the maintenance window'
+  MONITOR_NAMES:
+    description: 'Comma-separated list of Monitor names to add to the maintenance window'
     required: true
 outputs:
   maintenance_id:
@@ -38,8 +38,8 @@ runs:
         UPTIME_PASSWORD: ${{ inputs.UPTIME_PASSWORD }}
         UPTIME_API_URL: ${{ inputs.UPTIME_API_URL }}
         MAINTENANCE_TITLE: ${{ inputs.MAINTENANCE_TITLE }}
-        MONITOR_ID: ${{ inputs.MONITOR_ID }}
-        MONITOR_NAME: ${{ inputs.MONITOR_NAME }}
+        MONITOR_IDS: ${{ inputs.MONITOR_IDS }}
+        MONITOR_NAMES: ${{ inputs.MONITOR_NAMES }}
       run: |
         TOKEN=$(curl -X POST -L -H 'Content-Type: application/x-www-form-urlencoded' \
           --data "username=${UPTIME_USERNAME}&password=${UPTIME_PASSWORD}" \
@@ -96,17 +96,26 @@ runs:
           echo "Maintenance ID: $MAINTENANCE_ID"
         fi
 
-        # Add the monitor to the maintenance window
-        ADD_MONITOR_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
-          -H "Authorization: Bearer ${TOKEN}" \
-          -d '[
-            {
-              "id": '"${MONITOR_ID}"',
-              "name": "'"${MONITOR_NAME}"'"
-            }
-          ]' "${UPTIME_API_URL}/maintenance/${MAINTENANCE_ID}/monitors")
+        # Split the comma-separated lists of monitor IDs and names
+        IFS=',' read -ra MONITOR_ID_ARRAY <<< "$MONITOR_IDS"
+        IFS=',' read -ra MONITOR_NAME_ARRAY <<< "$MONITOR_NAMES"
 
-        echo "Monitor added to maintenance ID: $MAINTENANCE_ID with Monitor ID: $MONITOR_ID"
+        # Iterate over the monitors and add each one to the maintenance window
+        for index in "${!MONITOR_ID_ARRAY[@]}"; do
+          MONITOR_ID=${MONITOR_ID_ARRAY[index]}
+          MONITOR_NAME=${MONITOR_NAME_ARRAY[index]}
+
+          ADD_MONITOR_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -d '[
+              {
+                "id": '"${MONITOR_ID}"',
+                "name": "'"${MONITOR_NAME}"'"
+              }
+            ]' "${UPTIME_API_URL}/maintenance/${MAINTENANCE_ID}/monitors")
+
+          echo "Monitor added to maintenance ID: $MAINTENANCE_ID with Monitor ID: $MONITOR_ID"
+        done
 
         # Set the output
         echo "maintenance_id=$MAINTENANCE_ID" >> "$GITHUB_OUTPUT"
